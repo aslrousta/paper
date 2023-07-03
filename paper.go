@@ -58,6 +58,14 @@ func (p *Paper) Bounds() image.Rectangle {
 	return p.bound
 }
 
+func (p *Paper) ExtendWidth(extra int) {
+	p.bound.Max.X += extra
+}
+
+func (p *Paper) ExtendHeight(extra int) {
+	p.bound.Max.Y += extra
+}
+
 func (p *Paper) At(x, y int) color.Color {
 	v := byte(255)
 	for _, t := range p.tiles {
