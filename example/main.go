@@ -22,6 +22,9 @@ func main() {
 		log.Fatal(err)
 	}
 
+	if err := render(girl, "modern", paper.Modern); err != nil {
+		log.Fatal(err)
+	}
 	if err := render(girl, "nostalgia", paper.Nostalgia); err != nil {
 		log.Fatal(err)
 	}
@@ -35,7 +38,10 @@ func main() {
 
 func render(im image.Image, name string, theme paper.Theme) error {
 	p := paper.New(theme, im.Bounds().Dx(), im.Bounds().Dy())
+
+	p.Mask()
 	draw.Draw(p, im.Bounds(), im, image.Point{}, draw.Src)
+	p.Unmask()
 
 	out, err := os.Create(name + ".jpg")
 	if err != nil {

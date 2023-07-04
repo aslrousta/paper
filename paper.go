@@ -49,12 +49,16 @@ var (
 )
 
 type Paper struct {
-	theme Theme
-	bound image.Rectangle
-	tiles []*tile
+	theme  Theme
+	bound  image.Rectangle
+	tiles  []*tile
+	masked bool
 }
 
 func (p *Paper) ColorModel() color.Model {
+	if p.masked {
+		return color.GrayModel
+	}
 	return color.RGBAModel
 }
 
@@ -68,6 +72,14 @@ func (p *Paper) ExtendWidth(extra int) {
 
 func (p *Paper) ExtendHeight(extra int) {
 	p.bound.Max.Y += extra
+}
+
+func (p *Paper) Mask() {
+	p.masked = true
+}
+
+func (p *Paper) Unmask() {
+	p.masked = false
 }
 
 func (p *Paper) At(x, y int) color.Color {
@@ -89,6 +101,9 @@ func (p *Paper) At(x, y int) color.Color {
 			}
 		}
 		break
+	}
+	if p.masked {
+		return color.Gray{v}
 	}
 	return p.theme(v)
 }
