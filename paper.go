@@ -30,6 +30,10 @@ func defineTheme(prim, bg color.RGBA) Theme {
 }
 
 var (
+	Modern Theme = defineTheme(
+		color.RGBA{21, 21, 21, 255},
+		color.RGBA{221, 221, 221, 255},
+	)
 	Nostalgia Theme = defineTheme(
 		color.RGBA{45, 40, 14, 255},
 		color.RGBA{227, 218, 189, 255},
