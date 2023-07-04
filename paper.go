@@ -84,23 +84,22 @@ func (p *Paper) Unmask() {
 
 func (p *Paper) At(x, y int) color.Color {
 	v := byte(255)
-	for _, t := range p.tiles {
-		if y < t.bound.Min.Y {
-			continue
+	if image.Pt(x, y).In(p.bound) {
+		i := 0
+		for i < len(p.tiles) && y >= p.tiles[i].bound.Max.Y {
+			i++
 		}
-		if y < t.bound.Max.Y {
-			for t != nil {
+		if i < len(p.tiles) && y >= p.tiles[i].bound.Min.Y {
+			for t := p.tiles[i]; t != nil; t = t.next {
 				if x < t.bound.Min.X {
-					t = t.next
-					continue
+					break
 				}
 				if x < t.bound.Max.X {
 					v = t.Get(x, y)
+					break
 				}
-				break
 			}
 		}
-		break
 	}
 	if p.masked {
 		return color.Gray{v}
@@ -109,54 +108,57 @@ func (p *Paper) At(x, y int) color.Color {
 }
 
 func (p *Paper) Set(x, y int, c color.Color) {
+	if !image.Pt(x, y).In(p.bound) {
+		return
+	}
+
 	r, g, b, _ := c.RGBA()
 	v := byte((19595*r + 38470*g + 7471*b + 1<<15) >> 24)
 
 	bx, by := (x/8)*8, (y/8)*8
 	bound := image.Rect(bx, by, bx+8, by+8)
-	if bound.Max.X > p.bound.Max.X {
-		p.bound.Max.X = bound.Max.X
-	}
-	if bound.Max.Y > p.bound.Max.Y {
-		p.bound.Max.Y = bound.Max.Y
+
+	i := 0
+	for i < len(p.tiles) && y >= p.tiles[i].bound.Max.Y {
+		i++
 	}
 
-	for i, t := range p.tiles {
-		if y < t.bound.Min.Y {
-			continue
-		}
-		if y < t.bound.Max.Y {
-			var prev *tile
-			for t != nil {
-				if x < t.bound.Min.X {
-					prev, t = t, t.next
-					continue
-				}
-				if x < t.bound.Max.X {
-					t.Set(x, y, v)
-				} else if prev == nil {
-					p.tiles[i] = &tile{bound: bound, next: t}
-					p.tiles[i].Set(x, y, v)
-				} else {
-					prev.next = &tile{bound: bound, next: t}
-					prev.next.Set(x, y, v)
-				}
-				return
-			}
-			prev.next = &tile{bound: bound}
-			prev.next.Set(x, y, v)
-		} else {
-			t := &tile{bound: bound}
-			t.Set(x, y, v)
-			p.tiles = append(p.tiles, t)
-			copy(p.tiles[i+1:], p.tiles[i:])
-			p.tiles[i] = t
-		}
-		return
-	}
 	t := &tile{bound: bound}
+	if i == len(p.tiles) {
+		p.tiles = append(p.tiles, t)
+	} else if y < p.tiles[i].bound.Min.Y {
+		p.tiles = append(p.tiles, t)
+		copy(p.tiles[i+1:], p.tiles[i:])
+		p.tiles[i] = t
+	} else {
+		t = p.link(t, i, x)
+	}
+
 	t.Set(x, y, v)
-	p.tiles = []*tile{t}
+}
+
+func (p *Paper) link(t *tile, i, x int) *tile {
+	var (
+		u *tile
+		v = p.tiles[i]
+	)
+	for v != nil && x >= v.bound.Max.X {
+		u, v = v, v.next
+	}
+
+	if v == nil {
+		u.next = t
+	} else if x < v.bound.Max.X && x >= v.bound.Min.X {
+		t = v
+	} else if u == nil {
+		t.next = v
+		p.tiles[i] = t
+	} else {
+		t.next = v
+		u.next = t
+	}
+
+	return t
 }
 
 type tile struct {
