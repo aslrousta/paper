@@ -12,40 +12,41 @@ func New(th Theme, w, h int) *Paper {
 	}
 }
 
-type Theme func(byte) color.Color
+type Theme struct {
+	Primary    color.RGBA
+	Background color.RGBA
+}
 
 func mix(prim, bg, v byte) byte {
 	return byte((int(255-v)*int(prim) + int(v)*int(bg)) / 255)
 }
 
-func defineTheme(prim, bg color.RGBA) Theme {
-	return func(v byte) color.Color {
-		return color.RGBA{
-			R: mix(prim.R, bg.R, v),
-			G: mix(prim.G, bg.G, v),
-			B: mix(prim.B, bg.B, v),
-			A: 255,
-		}
+func (th *Theme) apply(v byte) color.Color {
+	return color.RGBA{
+		R: mix(th.Primary.R, th.Background.R, v),
+		G: mix(th.Primary.G, th.Background.G, v),
+		B: mix(th.Primary.B, th.Background.B, v),
+		A: 255,
 	}
 }
 
 var (
-	Modern Theme = defineTheme(
-		color.RGBA{21, 21, 21, 255},
-		color.RGBA{221, 221, 221, 255},
-	)
-	Nostalgia Theme = defineTheme(
-		color.RGBA{45, 40, 14, 255},
-		color.RGBA{227, 218, 189, 255},
-	)
-	Sepia Theme = defineTheme(
-		color.RGBA{52, 36, 36, 255},
-		color.RGBA{190, 155, 118, 255},
-	)
-	Night Theme = defineTheme(
-		color.RGBA{221, 221, 221, 255},
-		color.RGBA{21, 21, 21, 255},
-	)
+	Modern = Theme{
+		Primary:    color.RGBA{21, 21, 21, 255},
+		Background: color.RGBA{221, 221, 221, 255},
+	}
+	Nostalgia = Theme{
+		Primary:    color.RGBA{45, 40, 14, 255},
+		Background: color.RGBA{227, 218, 189, 255},
+	}
+	Sepia = Theme{
+		Primary:    color.RGBA{52, 36, 36, 255},
+		Background: color.RGBA{190, 155, 118, 255},
+	}
+	Night = Theme{
+		Primary:    color.RGBA{221, 221, 221, 255},
+		Background: color.RGBA{21, 21, 21, 255},
+	}
 )
 
 type Paper struct {
@@ -104,7 +105,7 @@ func (p *Paper) At(x, y int) color.Color {
 	if p.masked {
 		return color.Gray{v}
 	}
-	return p.theme(v)
+	return p.theme.apply(v)
 }
 
 func (p *Paper) Set(x, y int, c color.Color) {
